@@ -38,11 +38,11 @@ remotes::install_github("Steal-This-Code/opendpd")
 
 ```
 
-##Fetching Data
+## Fetching Data
 
 The package provides functions starting with `get_` to retrieve data from different datasets. They handle API pagination automatically and allow filtering via dedicated arguments or a custom `where` clause.
 
-###Police Incidents
+## Police Incidents
 
 This is the primary dataset for reported crime incidents.
 
@@ -63,7 +63,7 @@ print(head(incidents_mar_central))
 
 ```
 
-##Police Arrests
+## Police Arrests
 
 Retrieve data on arrests made by Dallas Police.
 
@@ -79,3 +79,98 @@ print(head(arrests_mar_beats))
 
 ```
 
+## Arrest Charges
+
+Retrieve details about charges associated with arrests.
+
+```{r example 3}
+# Get Felony charges during April 2024
+charges_apr_felony <- get_charges(
+  start_date = "2024-04-01",
+  end_date = "2024-04-30",
+  severity = "FELONY",
+  limit = 50
+)
+print(head(charges_apr_felony))
+
+```
+
+## Use of Force
+
+Retrieve Response to Resistance / Use of Force data. Requires specifying the year, as data is stored in separate yearly datasets (currently supports 2017-2020). Column names may vary by year.
+
+```{r example 4}
+# Get UoF incidents for 2020 where force type involved 'Physical Force'
+uof_2020_physical <- get_uof(
+  year = 2020,
+  force_type = "Physical Force",
+  limit = 25
+)
+print(head(uof_2020_physical))
+
+```
+
+## Exploring Filter Values
+
+Before filtering with the `get_` functions, you might want to see the available options for certain fields.
+
+```{r example 5}
+# See distinct divisions in the Incidents dataset
+incident_divisions <- list_distinct_values(field = "division", dataset = "incidents")
+print(incident_divisions)
+
+# See distinct severities in the Charges dataset
+charge_severities <- list_distinct_values(field = "severity", dataset = "charges")
+print(charge_severities)
+
+# See distinct force types in the 2019 UoF dataset
+uof_forcetypes_2019 <- list_distinct_values(field = "forcetype", dataset = "uof", year = 2019)
+print(uof_forcetypes_2019)
+
+```
+
+## Cleaning Data
+
+The package includes functions to perform basic cleaning (text formatting, date parsing) and standardization for specific datasets. These are typically used after retrieving the data.
+
+## Basic Cleaning (Text and Dates)
+
+Functions like `clean_incidents_data()` and `clean_arrests_data()` apply standard text cleaning (lowercase, trim whitespace) to common fields and parse date/time columns into POSIXct objects (using `lubridate`, requires installation).
+
+```{r example 6}
+# Fetch raw incident data
+raw_incidents <- get_incidents(limit = 20, start_date = "2024-04-01")
+
+# Apply cleaning
+# Needs stringr & lubridate: install.packages(c("stringr", "lubridate"))
+cleaned_incidents <- clean_incidents_data(raw_incidents)
+
+# Check date class and cleaned division
+print(class(cleaned_incidents$date1))
+print(head(cleaned_incidents$division))
+
+# You can also clean arrest data
+# raw_arrests <- get_arrests(limit=20)
+# cleaned_arrests <- clean_arrests_data(raw_arrests)
+```
+
+## Standardizing Categorical Fields
+
+Functions like `standardize_division()` and `standardize_district()` map variations in specific fields (like police division or council district in the incidents data) to a standard set of categories and convert them to factors. This is useful for analysis after basic cleaning.
+
+```{r example 7}
+# Assuming 'cleaned_incidents' from the previous step
+standardized_incidents <- standardize_division(cleaned_incidents)
+standardized_incidents <- standardize_district(standardized_incidents) # Can chain them
+
+# See the standardized values and factor levels
+print(table(standardized_incidents$division, useNA = "ifany"))
+print(levels(standardized_incidents$district))
+
+```
+
+## Data Sources
+
+Data is sourced from the [Dallas Open Data Portal](https://www.dallasopendata.com/). Specific datasets used include Police Incidents, Arrests, Arrest Charges, and Response to Resistance (Use of Force). Field names and data availability are subject to change based on the source portal. 
+
+All data are made available through the [Open Data Commons Attribution License](http://opendatacommons.org/licenses/by/1.0/)
