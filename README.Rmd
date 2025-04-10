@@ -123,9 +123,13 @@ print(incident_divisions)
 charge_severities <- list_distinct_values(field = "severity", dataset = "charges")
 print(charge_severities)
 
-# See distinct force types in the 2019 UoF dataset
-uof_forcetypes_2019 <- list_distinct_values(field = "forcetype", dataset = "uof", year = 2019)
-print(uof_forcetypes_2019)
+# See distinct penalty classes ('pclass') from Charges data
+charge_pclasses <- list_distinct_values(field = "pclass", dataset = "charges")
+print(charge_pclasses)
+
+# See distinct arrest districts ('arldistrict') from Arrests data
+arrest_districts <- list_distinct_values(field = "arldistrict", dataset = "arrests")
+print(arrest_districts)
 
 ```
 
