@@ -26,7 +26,7 @@
 #'
 #' @importFrom dplyr mutate across all_of contains matches tibble select
 #' @importFrom stringr str_to_lower str_trim str_squish
-#' @importFrom rlang .data check_installed warn inform is_installed list2
+#' @importFrom rlang .data check_installed warn inform is_installed list2 := sym
 #' @importFrom tidyselect everything where
 #' @importFrom lubridate parse_date_time
 #'
@@ -127,14 +127,12 @@ clean_incidents_data <- function(data,
       expected_orders <- c(
         "Ymd HMS",  # Common format with time, e.g., 2023-01-15T10:30:00
         "Ymd"       # Date only format
-        # Add other formats here if discovered in the data
       )
 
       cleaned_data <- cleaned_data |>
         dplyr::mutate(
           dplyr::across(dplyr::all_of(fields_to_convert_present),
                         ~ lubridate::parse_date_time(.x, orders = expected_orders, tz = tz, quiet = TRUE))
-          # quiet = TRUE returns NA for parsing failures without excessive warnings
         )
     } else {
       rlang::inform("No specified date fields found or `date_fields` was NULL; skipping date parsing.")
@@ -151,10 +149,9 @@ clean_incidents_data <- function(data,
 #' converts the column to a factor. Designed to be used after basic text cleaning
 #' (e.g., via `clean_incidents_data`).
 #'
-#' @param data A data frame or tibble containing a column named `division`,
-#'   preferably already cleaned to lowercase and with squished whitespace.
-#' @param division_col The name of the division column (unquoted or as string).
-#'   Defaults to `division`.
+#' @param data A data frame or tibble containing a column named `division`.
+#' @param division_col The name of the division column as a **string**.
+#'   Defaults to `"division"`.
 #'
 #' @return A tibble with the specified division column standardized and converted
 #'   to a factor with defined levels: "central", "northeast", "northwest",
@@ -163,32 +160,35 @@ clean_incidents_data <- function(data,
 #' @export
 #'
 #' @importFrom dplyr mutate case_match select all_of rename_with across
-#' @importFrom rlang .data enquo quo_name sym warn inform check_installed :=
+#' @importFrom rlang .data sym warn inform check_installed :=
 #' @importFrom stringr str_squish str_to_lower
 #'
 #' @examples
 #' \dontrun{
 #'   # Assume raw_incidents is output from get_incidents()
-#'   # Basic cleaning first
 #'   cleaned_incidents <- clean_incidents_data(raw_incidents)
 #'
 #'   # Standardize the 'division' column
-#'   standardized_incidents <- standardize_division(cleaned_incidents)
+#'   standardized_incidents <- standardize_division(cleaned_incidents, division_col = "division")
 #'
 #'   # Check the levels and values
 #'   print(levels(standardized_incidents$division))
 #'   print(table(standardized_incidents$division, useNA = "ifany"))
 #' }
-standardize_division <- function(data, division_col = division) {
+# --- Function definition updated ---
+standardize_division <- function(data, division_col = "division") {
 
-  # Capture the column name using non-standard evaluation
-  col_quo <- rlang::enquo(division_col)
-  col_name <- rlang::quo_name(col_quo)
+  # Use the provided string column name directly
+  col_name <- division_col
 
   # Check if column exists
   if (!col_name %in% names(data)) {
     rlang::warn(paste("Column", shQuote(col_name), "not found in data. Skipping standardization."))
     return(data)
+  }
+  # Ensure input is a string
+  if (!is.character(col_name) || length(col_name) != 1) {
+    stop("`division_col` must be a single string naming the column.", call.=FALSE)
   }
 
   # Ensure dependencies are available
@@ -226,19 +226,16 @@ standardize_division <- function(data, division_col = division) {
         "north central" ~ "northcentral",
 
         # --- Map standard names to themselves ---
-        # Ensures correct values are retained and included in factor levels
         standard_division_names ~ .data[[temp_clean_col]],
 
         # --- Handle anything else ---
-        # Default returns NA, flagging unknown/unexpected values
         .default = NA_character_
       )
     )
 
   # Check if any values became NA during standardization
-  original_values <- data[[col_name]] # Get original for comparison
+  original_values <- data[[col_name]]
   standardized_values <- data_standardized[[temp_std_col]]
-  # Check where original was not NA/blank but standardized is NA
   num_na_introduced <- sum(is.na(standardized_values) & !is.na(original_values) & original_values != "")
   if (num_na_introduced > 0) {
     rlang::warn(paste0(num_na_introduced, " value(s) in column ", shQuote(col_name),
@@ -248,6 +245,7 @@ standardize_division <- function(data, division_col = division) {
   # Overwrite original column, convert to factor w/ standard levels
   data_standardized <- data_standardized |>
     dplyr::mutate(
+      # Use !!sym() to use the string col_name on the LHS of :=
       !!rlang::sym(col_name) := factor(.data[[temp_std_col]],
                                        levels = standard_division_names)
     ) |>
@@ -265,10 +263,9 @@ standardize_division <- function(data, division_col = division) {
 #' to a standard format ("1" through "14") and converts the column to a factor.
 #' Assumes input column has already had basic text cleaning.
 #'
-#' @param data A data frame or tibble containing a council district column,
-#'   typically named `district`.
-#' @param district_col The name of the district column (unquoted or as string).
-#'   Defaults to `district`.
+#' @param data A data frame or tibble containing a council district column.
+#' @param district_col The name of the district column as a **string**.
+#'   Defaults to `"district"`.
 #'
 #' @return A tibble with the specified district column standardized to character
 #'   values "1" through "14" and converted to a factor. Values that cannot be
@@ -276,29 +273,33 @@ standardize_division <- function(data, division_col = division) {
 #' @export
 #'
 #' @importFrom dplyr mutate case_when select all_of if_else across
-#' @importFrom rlang .data enquo quo_name sym warn inform check_installed :=
+#' @importFrom rlang .data sym warn inform check_installed :=
 #' @importFrom stringr str_squish str_to_lower str_extract str_detect
 #'
 #' @examples
 #' \dontrun{
 #'   # Assume raw_incidents is output from get_incidents()
 #'   cleaned_incidents <- clean_incidents_data(raw_incidents) # Basic cleaning first
-#'   standardized_incidents <- standardize_district(cleaned_incidents)
+#'   standardized_incidents <- standardize_district(cleaned_incidents, district_col = "district")
 #'
 #'   # Check the levels and values
 #'   print(levels(standardized_incidents$district))
 #'   print(table(standardized_incidents$district, useNA = "ifany"))
 #' }
-standardize_district <- function(data, district_col = district) {
+# --- Function definition updated ---
+standardize_district <- function(data, district_col = "district") {
 
-  # Capture the column name
-  col_quo <- rlang::enquo(district_col)
-  col_name <- rlang::quo_name(col_quo)
+  # Use the provided string column name directly
+  col_name <- district_col
 
   # Check if column exists
   if (!col_name %in% names(data)) {
     rlang::warn(paste("Column", shQuote(col_name), "not found in data. Skipping standardization."))
     return(data)
+  }
+  # Ensure input is a string
+  if (!is.character(col_name) || length(col_name) != 1) {
+    stop("`district_col` must be a single string naming the column.", call.=FALSE)
   }
 
   # Ensure dependencies
@@ -325,10 +326,9 @@ standardize_district <- function(data, district_col = district) {
         # Explicit matches for numbers "1" through "14"
         .data[[temp_clean_col]] %in% standard_district_levels ~ .data[[temp_clean_col]],
         # Extract number from strings like "district 1", "dist 14", "council district 5" etc.
-        # Looks for a sequence of 1 or 2 digits at the end of the string, possibly preceded by space or underscore
         stringr::str_detect(.data[[temp_clean_col]], "(^|\\s|_)(\\d{1,2})$") ~
           stringr::str_extract(.data[[temp_clean_col]], "\\d{1,2}$"),
-        # Add other specific known variations if needed (e.g., full text names?)
+        # Add other specific known variations if needed
         .default = NA_character_ # Default to NA if no pattern matches
       ),
       # Ensure extracted numbers are within the valid 1-14 range
@@ -351,6 +351,7 @@ standardize_district <- function(data, district_col = district) {
   # Overwrite original column, convert to factor
   data_standardized <- data_standardized |>
     dplyr::mutate(
+      # Use !!sym() to use the string col_name on the LHS of :=
       !!rlang::sym(col_name) := factor(.data[[temp_std_col]],
                                        levels = standard_district_levels)
     ) |>

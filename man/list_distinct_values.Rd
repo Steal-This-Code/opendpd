@@ -59,8 +59,10 @@ Officer Involved Shootings, or Use of Force by year).
   print(arrest_beats) # Note: field is numeric
 
   # Get distinct outcomes from OIS data
-  ois_outcomes <- list_distinct_values(field = "suspect_deceased_injured_or_shoot_and_miss", dataset = "ois")
-  print(ois_outcomes)
+  ois_outcomes <- list_distinct_values(
+    field = "suspect_deceased_injured_or_shoot_and_miss",
+    dataset = "ois")
+    print(ois_outcomes)
 
   # Get distinct Force Types from UoF data for 2020
   uof_force_types_2020 <- list_distinct_values(field = "forcetype", dataset = "uof", year = 2020)

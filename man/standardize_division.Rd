@@ -4,14 +4,13 @@
 \alias{standardize_division}
 \title{Standardize Police Division Names}
 \usage{
-standardize_division(data, division_col = division)
+standardize_division(data, division_col = "division")
 }
 \arguments{
-\item{data}{A data frame or tibble containing a column named `division`,
-preferably already cleaned to lowercase and with squished whitespace.}
+\item{data}{A data frame or tibble containing a column named `division`.}
 
-\item{division_col}{The name of the division column (unquoted or as string).
-Defaults to `division`.}
+\item{division_col}{The name of the division column as a **string**.
+Defaults to `"division"`.}
 }
 \value{
 A tibble with the specified division column standardized and converted
@@ -27,11 +26,10 @@ converts the column to a factor. Designed to be used after basic text cleaning
 \examples{
 \dontrun{
   # Assume raw_incidents is output from get_incidents()
-  # Basic cleaning first
   cleaned_incidents <- clean_incidents_data(raw_incidents)
 
   # Standardize the 'division' column
-  standardized_incidents <- standardize_division(cleaned_incidents)
+  standardized_incidents <- standardize_division(cleaned_incidents, division_col = "division")
 
   # Check the levels and values
   print(levels(standardized_incidents$division))

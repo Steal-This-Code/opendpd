@@ -4,14 +4,13 @@
 \alias{standardize_district}
 \title{Standardize Dallas Council District Names}
 \usage{
-standardize_district(data, district_col = district)
+standardize_district(data, district_col = "district")
 }
 \arguments{
-\item{data}{A data frame or tibble containing a council district column,
-typically named `district`.}
+\item{data}{A data frame or tibble containing a council district column.}
 
-\item{district_col}{The name of the district column (unquoted or as string).
-Defaults to `district`.}
+\item{district_col}{The name of the district column as a **string**.
+Defaults to `"district"`.}
 }
 \value{
 A tibble with the specified district column standardized to character
@@ -27,7 +26,7 @@ Assumes input column has already had basic text cleaning.
 \dontrun{
   # Assume raw_incidents is output from get_incidents()
   cleaned_incidents <- clean_incidents_data(raw_incidents) # Basic cleaning first
-  standardized_incidents <- standardize_district(cleaned_incidents)
+  standardized_incidents <- standardize_district(cleaned_incidents, district_col = "district")
 
   # Check the levels and values
   print(levels(standardized_incidents$district))
