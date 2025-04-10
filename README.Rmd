@@ -11,6 +11,7 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+library(opendpd)
 ```
 
 # opendpd
@@ -29,20 +30,52 @@ You can install the development version of opendpd like so:
 remotes::install_github("Steal-This-Code/opendpd")
 ```
 
-## Example
+## Usage
+```{recommended libraries}
+# Optional: Load other packages needed for examples here if necessary
+# library(dplyr)
+# library(lubridate)
 
-This is a basic example which shows you how to solve a common problem:
+```
+
+##Fetching Data
+
+The package provides functions starting with `get_` to retrieve data from different datasets. They handle API pagination automatically and allow filtering via dedicated arguments or a custom `where` clause.
+
+###Police Incidents
+
+This is the primary dataset for reported crime incidents.
 
 ```{r example}
-library(opendpd)
+# Get the first 50 incidents in the Central division for March 2024
+incidents_mar_central <- get_incidents(
+  start_date = "2024-03-01",
+  end_date = "2024-03-31",
+  division = "CENTRAL",
+  limit = 50
+)
+print(head(incidents_mar_central))
 
-# Get the 10 most recent police incidents
-recent_incidents_raw <- get_incidents(limit = 10, `$order` = "date1 DESC")
+# Get incidents as an sf object (requires sf package)
+# Note: Uses State Plane coordinates (EPSG:2276)
+# incidents_sf <- get_incidents(limit = 10, convert_geo = TRUE)
+# print(class(incidents_sf))
 
-# Apply basic cleaning (lowercase text, parse dates)
-# Needs stringr and lubridate installed
-recent_incidents_clean <- clean_incidents_data(recent_incidents_raw)
+```
 
-# Show the first few rows and structure
-print(head(recent_incidents_clean))
-str(recent_incidents_clean)
+##Police Arrests
+
+Retrieve data on arrests made by Dallas Police.
+
+```{r example 2}
+# Get arrests for specific beats in March 2024
+arrests_mar_beats <- get_arrests(
+  start_date = "2024-03-01",
+  end_date = "2024-03-31",
+  beat = c(114, 121), # Note: Uses 'arlbeat' field from API
+  limit = 25
+)
+print(head(arrests_mar_beats))
+
+```
+
