@@ -1,0 +1,20 @@
+Package: opendpd
+Type: Package
+Title: An R Interface to Dallas Open Data Public Safety APIs
+Version: 0.1.0
+Authors@R: person("Anthony", "Galvan", , "anthony@stealthiscode.org", role = c("aut", "cre"))
+Description: Provides functions to download and process Dallas Police Incident open data using the Socrata API.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    dplyr,
+    httr,
+    jsonlite,
+    lubridate,
+    rlang,
+    stringr
+Suggests:  sf
+RoxygenNote: 7.3.2
+URL: https://github.com/Steal-This-Code/opendpd
+BugReports: https://github.com/Steal-This-Code/opendpd/issues

@@ -1,0 +1,48 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# opendpd
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of opendpd is to provide an easy-to-use R interface for accessing various Dallas Police public safety datasets via the Socrata Open Data API, including functions for data retrieval and basic cleaning.
+
+## Installation
+
+You can install the development version of opendpd like so:
+
+``` r
+# install.packages("remotes") # Uncomment if user might not have remotes
+remotes::install_github("Steal-This-Code/opendpd")
+```
+
+## Example
+
+This is a basic example which shows you how to solve a common problem:
+
+```{r example}
+library(opendpd)
+
+# Get the 10 most recent police incidents
+recent_incidents_raw <- get_incidents(limit = 10, `$order` = "date1 DESC")
+
+# Apply basic cleaning (lowercase text, parse dates)
+# Needs stringr and lubridate installed
+recent_incidents_clean <- clean_incidents_data(recent_incidents_raw)
+
+# Show the first few rows and structure
+print(head(recent_incidents_clean))
+str(recent_incidents_clean)
