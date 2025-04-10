@@ -21,7 +21,7 @@ A tibble with the specified district column standardized to character
 \description{
 Attempts to map variations of Dallas City Council District names/numbers
 to a standard format ("1" through "14") and converts the column to a factor.
-Assumes input column has already had basic text cleaning (lowercase, spacing).
+Assumes input column has already had basic text cleaning.
 }
 \examples{
 \dontrun{
@@ -32,10 +32,5 @@ Assumes input column has already had basic text cleaning (lowercase, spacing).
   # Check the levels and values
   print(levels(standardized_incidents$district))
   print(table(standardized_incidents$district, useNA = "ifany"))
-
-  # Example with different inputs
-  # df <- tibble::tibble(council_dist = c("1", "District 2", "DISTRICT_03", "UNKNOWN"))
-  # standardized_df <- standardize_district(df, district_col = council_dist)
-  # print(standardized_df) # Expect "1", "2", "3", NA
 }
 }

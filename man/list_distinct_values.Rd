@@ -13,11 +13,11 @@ list_distinct_values(
 }
 \arguments{
 \item{field}{A character string specifying the **exact API field name** for which
-to retrieve distinct values (e.g., "division", "arlbeat", "chargedesc", "forcetype").
+to retrieve distinct values (e.g., "division", "arlbeat", "chargedesc", "forcetype", "suspect_weapon").
 Case-sensitive.}
 
 \item{dataset}{Character string specifying the dataset to query. Options are:
-`"incidents"` (default), `"arrests"`, `"charges"`, `"uof"`.}
+`"incidents"` (default), `"arrests"`, `"charges"`, `"ois"`, `"uof"`.}
 
 \item{year}{Numeric. Required **only** if `dataset = "uof"`. Specifies the year
 (2017-2020) for the Use of Force data. Ignored for other datasets.}
@@ -27,7 +27,7 @@ to 5000. Increase if needed, but be mindful of API performance.}
 }
 \value{
 A character or numeric vector containing the unique values for the
-  specified field, sorted by the API. Returns `NULL` if the query fails,
+  specified field, sorted. Returns `NULL` if the query fails,
   returns no data, or the field is invalid for the dataset.
 }
 \description{
@@ -42,7 +42,7 @@ Check the source dataset documentation or field lists if unsure.
 \details{
 Queries the Dallas Police Open Data API to retrieve unique values
 for a specified field from a chosen dataset (Incidents, Arrests, Charges,
-or Use of Force by year).
+Officer Involved Shootings, or Use of Force by year).
 }
 \examples{
 \dontrun{
@@ -58,12 +58,12 @@ or Use of Force by year).
   arrest_beats <- list_distinct_values(field = "arlbeat", dataset = "arrests")
   print(arrest_beats) # Note: field is numeric
 
+  # Get distinct outcomes from OIS data
+  ois_outcomes <- list_distinct_values(field = "suspect_deceased_injured_or_shoot_and_miss", dataset = "ois")
+  print(ois_outcomes)
+
   # Get distinct Force Types from UoF data for 2020
   uof_force_types_2020 <- list_distinct_values(field = "forcetype", dataset = "uof", year = 2020)
   print(uof_force_types_2020)
-
-  # Get distinct Service Types from UoF data for 2019 (needs specific field name)
-  uof_service_types_2019 <- list_distinct_values(field = "service_ty", dataset = "uof", year = 2019)
-  print(uof_service_types_2019)
 }
 }

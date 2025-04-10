@@ -18,26 +18,26 @@ get_uof(
 )
 }
 \arguments{
-\item{year}{Numeric. The specific year for which to retrieve data. **Must be
-between 2017 and 2020 (inclusive).**}
+\item{year}{Numeric. The specific year for which to retrieve data. Must be
+between 2017 and 2020 (inclusive).}
 
 \item{start_date}{Optional. A character string in 'YYYY-MM-DD' format or a
 Date object specifying the minimum incident date (inclusive). Filters on
-`OCCURRED_D` (for years 2017-2019) or `OCCURRED_DT` (for year 2020).}
+`occurred_d` (for years 2017-2019) or `occurred_dt` (for year 2020).}
 
 \item{end_date}{Optional. A character string in 'YYYY-MM-DD' format or a
 Date object specifying the maximum incident date (inclusive). Filters on
-`OCCURRED_D` or `OCCURRED_DT` based on the year.}
+`occurred_d` or `occurred_dt` based on the year.}
 
 \item{force_type}{Optional. A character vector of force types to filter by
-(e.g., 'Pointing Firearm', 'Taser Display', 'Physical Force'), matching the `ForceType` field.}
+(e.g., 'Pointing Firearm', 'Taser Display', 'Physical Force'), matching the `forcetype` field.}
 
 \item{reason}{Optional. A character vector of UOF reasons to filter by
-(e.g., 'Resisting Arrest', 'Prevent Escape'), matching the `UOF_REASON` field.}
+(e.g., 'Resisting Arrest', 'Prevent Escape'), matching the `uof_reason` field.}
 
 \item{service_type}{Optional. A character vector of service types to filter by
-(e.g., 'Warrant Service', 'Disturbance Call'). Filters on `SERVICE_TY` (2017-2019)
-or `SERVICE_TYPE` (2020).}
+(e.g., 'Warrant Service', 'Disturbance Call'). Filters on `service_ty` (2017-2019)
+or `service_type` (2020).}
 
 \item{limit}{The maximum number of records to return for the specified year.
 Defaults to 1000. Use `limit = Inf` to attempt retrieving all records for that year.}
@@ -59,8 +59,8 @@ A `tibble` containing the requested UOF data for the specified year (2017-2020).
 }
 \description{
 This function queries the Socrata Open Data API (SODA) for Dallas Police
-UOF data for a single specified year. **Currently, only data for years 2017 through
-2020 is supported by this function.** Data is split by year on the portal,
+UOF data for a single specified year. Currently, only data for years 2017 through
+2020 is supported by this function. Data is split by year on the portal,
 and column names/types may vary between years within this range.
 
 Filtering by common fields like force type, reason, and service type is supported.

@@ -36,10 +36,5 @@ converts the column to a factor. Designed to be used after basic text cleaning
   # Check the levels and values
   print(levels(standardized_incidents$division))
   print(table(standardized_incidents$division, useNA = "ifany"))
-
-  # Example with a non-standard column name
-  # df <- tibble::tibble(dpd_division = c("central", " South West ", "NORTHEAST"))
-  # standardized_df <- standardize_division(df, division_col = dpd_division)
-  # print(standardized_df)
 }
 }

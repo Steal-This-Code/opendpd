@@ -43,8 +43,7 @@ Use `limit = Inf` to attempt retrieving all matching records.}
 If NULL (default), all columns are retrieved.}
 
 \item{where}{An optional character string containing a custom SoQL WHERE clause
-(e.g., `"charge_category = 'TRAFFIC'"` or `"race = 'BLACK'"`).
-Overrides other filter arguments if provided.}
+(e.g., `"race = 'BLACK'"`). Overrides other filter arguments if provided.}
 
 \item{...}{Additional SODA query parameters passed directly to the API URL,
 (e.g., `$order = "ararrestdate DESC"`).}
@@ -76,18 +75,17 @@ print(recent_arrests)
 # Get arrests in specific beats during March 2024
 march_arrests_beat <- get_arrests(
   start_date = "2024-03-01", end_date = "2024-03-31",
-  beat = c(114, 121), # Using numbers as arlbeat is numeric
+  beat = c(114, 121), # arlbeat is numeric
   limit = 100
 )
 print(march_arrests_beat)
 
-# Use 'where' to filter by charge category (using name from web metadata)
-# Note: Field names like 'charge_category' might be inconsistent, verify first!
-traffic_arrests <- get_arrests(
-  where = "charge_category = 'TRAFFIC'",
+# Use 'where' to filter (e.g., by race - use with caution/awareness)
+arrests_filtered <- get_arrests(
+  where = "race = 'BLACK'",
   limit = 50,
   start_date = "2024-04-01", end_date = "2024-04-30"
 )
-print(traffic_arrests)
+print(arrests_filtered)
 }
 }

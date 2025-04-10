@@ -24,10 +24,10 @@ get_incidents(
 }
 \arguments{
 \item{start_date}{Optional. A character string in 'YYYY-MM-DD' format or a
-Date object specifying the minimum incident date (inclusive, based on `date1` field).}
+Date object specifying the minimum incident date (inclusive, based on `date1` text field).}
 
 \item{end_date}{Optional. A character string in 'YYYY-MM-DD' format or a
-Date object specifying the maximum incident date (inclusive, based on `date1` field).}
+Date object specifying the maximum incident date (inclusive, based on `date1` text field).}
 
 \item{nibrs_group}{Optional. A character vector of NIBRS Group codes (e.g., 'A', 'B')
 to filter incidents.}
@@ -48,7 +48,7 @@ on the API field `nibrs_crimeagainst`.}
 
 \item{sector}{Optional. A character or numeric vector of Police Sector(s) to filter incidents.}
 
-\item{district}{Optional. A character vector of Police District names (e.g., 'SOUTHEAST', 'NORTH CENTRAL')
+\item{district}{Optional. A character vector of Police District names (Council Districts)
 to filter incidents.}
 
 \item{convert_geo}{Logical. If `TRUE`, attempt to convert the data frame to an
@@ -99,17 +99,11 @@ print(class(recent_tibble))
 
 # Get recent data as an sf object (requires the sf package)
 # install.packages("sf")
-recent_sf <- get_incidents(limit = 10, `$order` = "date1 DESC", convert_geo = TRUE) # Changed here
+recent_sf <- get_incidents(limit = 10, `$order` = "date1 DESC", convert_geo = TRUE)
 print(class(recent_sf))
 if (inherits(recent_sf, "sf")) {
   print(sf::st_crs(recent_sf)) # Check CRS - should show EPSG 2276
-  # Plotting might require transformation depending on the base map context
-  # Simple plot of the geometry:
-  # plot(sf::st_geometry(recent_sf))
-
-  # Example transformation to WGS84 (Lat/Lon) for use with leaflet, etc.
-  # recent_sf_wgs84 <- sf::st_transform(recent_sf, crs = 4326)
-  # print(sf::st_crs(recent_sf_wgs84))
+  # plot(sf::st_geometry(recent_sf)) # Simple plot
 }
 
 # Filter and get as sf object
@@ -118,19 +112,11 @@ central_burglaries_sf <- get_incidents(
    nibrs_code = "220", # Check code for Burglary/B&E
    start_date = "2024-03-01",
    end_date = "2024-03-31",
-   convert_geo = TRUE, # Changed here
+   convert_geo = TRUE,
    limit = 50
 )
 if (inherits(central_burglaries_sf, "sf")) {
    print(central_burglaries_sf)
 }
-
-# Using select - make sure to include coordinates if converting!
-selected_sf <- get_incidents(
-   limit = 5,
-   select = c("date1", "nibrs_code", "x_coordinate", "y_cordinate"),
-   convert_geo = TRUE # Changed here
-)
-print(selected_sf)
 }
 }

@@ -37,9 +37,7 @@ to filter by (e.g., 'NO BILL', 'TRUE BILL'), matching the `grand_jury_dispositio
 Use `limit = Inf` to attempt retrieving all matching records.}
 
 \item{select}{A character vector specifying which columns to retrieve.
-If NULL (default), all columns are retrieved (based on the provided list:
-'case', 'date', 'suspect_deceased_injured_or_shoot_and_miss', 'suspect_weapon',
-'officer_s', 'grand_jury_disposition', 'ag_forms', 'summary_url', 'geolocation').}
+If NULL (default), all available columns are retrieved.}
 
 \item{where}{An optional character string containing a custom SoQL WHERE clause
 (e.g., `"case = '012345-2023'"`). Overrides other filter arguments if provided.}
@@ -56,7 +54,7 @@ Officer Involved Shootings. It allows filtering by date range, outcome,
 suspect weapon, and grand jury disposition. It supports retrieving
 large datasets through automatic pagination. Note that detailed geographic
 filters (zip, beat, etc.) and geographic object conversion are not available
-for this specific dataset via this function due to missing fields in source.
+for this specific dataset via this function.
 
 If the `where` argument is provided, it overrides all other filter arguments.
 }
@@ -70,19 +68,19 @@ Retrieves OIS data from the Dallas Open Data portal API
 recent_ois <- get_ois(limit = 10, `$order` = "date DESC")
 print(recent_ois)
 
-# Get OIS incidents from 2023 where outcome was 'DECEASED'
-deceased_2023 <- get_ois(
-  start_date = "2023-01-01", end_date = "2023-12-31",
-  outcome = "DECEASED"
-)
-print(deceased_2023)
+# Get OIS incidents from 2023 where outcome was 'DECEASED' (replace with valid year)
+# deceased_ois <- get_ois(
+#   start_date = "2023-01-01", end_date = "2023-12-31",
+#   outcome = "DECEASED"
+# )
+# print(deceased_ois)
 
 # Get OIS incidents where suspect weapon was reported as 'HANDGUN' or 'RIFLE'
 firearm_ois <- get_ois(suspect_weapon = c("HANDGUN", "RIFLE"), limit = 50)
 print(firearm_ois)
 
 # Use 'where' clause for case number lookup
-specific_case <- get_ois(where = "case = '012345-2023'") # Use actual case number
-print(specific_case)
+# specific_case <- get_ois(where = "case = '012345-2023'") # Use actual case number
+# print(specific_case)
 }
 }

@@ -1,4 +1,4 @@
-# R/clean_data.R (Replace existing clean_incidents_data)
+# R/clean_data.R
 
 #' Clean Dallas Police Incidents Data
 #'
@@ -27,8 +27,8 @@
 #' @importFrom dplyr mutate across all_of contains matches tibble select
 #' @importFrom stringr str_to_lower str_trim str_squish
 #' @importFrom rlang .data check_installed warn inform is_installed list2
-#' @importFrom tidyselect everything where # Changed from defining where locally
-#' @importFrom lubridate parse_date_time # Added lubridate import
+#' @importFrom tidyselect everything where
+#' @importFrom lubridate parse_date_time
 #'
 #' @examples
 #' \dontrun{
@@ -64,7 +64,7 @@ clean_incidents_data <- function(data,
                                                  "calldispatched", "upzdate"),
                                  tz = "America/Chicago") {
 
-  # Input validation
+  # --- Input validation ---
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame or tibble.", call. = FALSE)
   }
@@ -98,8 +98,9 @@ clean_incidents_data <- function(data,
                           paste(fields_to_clean_present, collapse=", ")))
       cleaned_data <- cleaned_data |>
         dplyr::mutate(
+          # Apply cleaning only to character columns among the specified fields
           dplyr::across(
-            dplyr::all_of(fields_to_clean_present) & tidyselect::where(is.character), # Apply only to character cols
+            dplyr::all_of(fields_to_clean_present) & tidyselect::where(is.character),
             ~ .x |> stringr::str_to_lower() |> stringr::str_trim() |> stringr::str_squish()
           )
         )
@@ -123,12 +124,10 @@ clean_incidents_data <- function(data,
                           paste(fields_to_convert_present, collapse=", ")))
 
       # Define likely orders for Socrata text/timestamp fields
-      # Socrata often uses ISO 8601 format like YYYY-MM-DDTHH:MM:SS
-      # Sometimes date only might appear
       expected_orders <- c(
-        "Ymd HMS",  # Common format with time
-        "Ymd"       # Date only
-        # Add others if specific formats are identified, e.g., "%m/%d/%Y %H:%M:%S"
+        "Ymd HMS",  # Common format with time, e.g., 2023-01-15T10:30:00
+        "Ymd"       # Date only format
+        # Add other formats here if discovered in the data
       )
 
       cleaned_data <- cleaned_data |>
@@ -137,15 +136,6 @@ clean_incidents_data <- function(data,
                         ~ lubridate::parse_date_time(.x, orders = expected_orders, tz = tz, quiet = TRUE))
           # quiet = TRUE returns NA for parsing failures without excessive warnings
         )
-
-      # Optional: Check for introduced NAs more thoroughly if needed
-      # for (col in fields_to_convert_present) {
-      #   num_failed <- sum(is.na(cleaned_data[[col]]) & !is.na(data[[col]]) & data[[col]] != "")
-      #   if (num_failed > 0) {
-      #      rlang::warn(paste(num_failed, "value(s) in column", shQuote(col), "failed to parse as dates/times."))
-      #   }
-      # }
-
     } else {
       rlang::inform("No specified date fields found or `date_fields` was NULL; skipping date parsing.")
     }
@@ -154,14 +144,6 @@ clean_incidents_data <- function(data,
   return(cleaned_data)
 }
 
-# Remove the locally defined 'where' function if it was added before,
-# use tidyselect::where directly or ensure tidyselect is imported if needed.
-# (Importing tidyselect itself might be easiest if using it more)
-# Or alternatively, keep the helper:
-# where <- function (fn) {
-#   predicate <- rlang::as_function(fn)
-#   function(x, ...) predicate(x, ...)
-# }
 
 #' Standardize Police Division Names
 #'
@@ -180,9 +162,9 @@ clean_incidents_data <- function(data,
 #'   known variations or standard names will become `NA`.
 #' @export
 #'
-#' @importFrom dplyr mutate case_match select all_of rename_with
-#' @importFrom rlang .data enquo quo_name sym
-#' @importFrom stringr str_squish str_to_lower # Apply basic cleaning again for robustness
+#' @importFrom dplyr mutate case_match select all_of rename_with across
+#' @importFrom rlang .data enquo quo_name sym warn inform check_installed :=
+#' @importFrom stringr str_squish str_to_lower
 #'
 #' @examples
 #' \dontrun{
@@ -196,11 +178,6 @@ clean_incidents_data <- function(data,
 #'   # Check the levels and values
 #'   print(levels(standardized_incidents$division))
 #'   print(table(standardized_incidents$division, useNA = "ifany"))
-#'
-#'   # Example with a non-standard column name
-#'   # df <- tibble::tibble(dpd_division = c("central", " South West ", "NORTHEAST"))
-#'   # standardized_df <- standardize_division(df, division_col = dpd_division)
-#'   # print(standardized_df)
 #' }
 standardize_division <- function(data, division_col = division) {
 
@@ -214,73 +191,68 @@ standardize_division <- function(data, division_col = division) {
     return(data)
   }
 
-  # Ensure dependencies are available if used directly
+  # Ensure dependencies are available
   rlang::check_installed("dplyr", reason = "to standardize division names.")
   rlang::check_installed("stringr", reason = "to clean division names.")
 
-  # Define standard names (ensure this list is correct/complete for DPD)
+  # Define standard names
   standard_division_names <- c("central", "northeast", "northwest",
                                "southcentral", "southeast", "southwest",
                                "northcentral")
 
   rlang::inform(paste("Standardizing column:", shQuote(col_name)))
 
-  # Create a temporary cleaned name to work with
-  temp_clean_col <- paste0(col_name, "_clean_temp")
+  # Create temporary column names to avoid conflicts
+  temp_clean_col <- paste0(".__", col_name, "_clean_temp")
+  temp_std_col <- paste0(".__", col_name, "_std_temp")
 
   data_standardized <- data |>
     # Apply basic cleaning robustly (lowercase, squish whitespace)
     dplyr::mutate(
-      # Use across with the captured column name
-      dplyr::across(dplyr::all_of(col_name),
-                    ~ stringr::str_squish(stringr::str_to_lower(as.character(.))),
-                    .names = "{.col}_clean_temp") # Store in temp column
+      "{temp_clean_col}" := stringr::str_squish(stringr::str_to_lower(as.character(.data[[col_name]])))
     ) |>
     dplyr::mutate(
       # Standardize using case_match on the temporary cleaned column
-      "{col_name}_std_temp" := dplyr::case_match(
-        .data[[temp_clean_col]], # Access temp column data
+      "{temp_std_col}" := dplyr::case_match(
+        .data[[temp_clean_col]],
         # --- Map known variations first ---
-        # Add variations as identified from exploring data
+        # Add more variations here as discovered through data exploration
         "central patrol div" ~ "central",
         "south west" ~ "southwest",
         "north east" ~ "northeast",
         "north west" ~ "northwest",
-        "south central" ~ "southcentral", # Map standard to self explicitly
-        "south east" ~ "southeast",       # Map standard to self explicitly
-        "north central" ~ "northcentral", # Map standard to self explicitly
+        "south central" ~ "southcentral",
+        "south east" ~ "southeast",
+        "north central" ~ "northcentral",
 
         # --- Map standard names to themselves ---
-        # This handles cases already correct and ensures they map correctly
-        # It's somewhat redundant if the variations above cover these, but safe
+        # Ensures correct values are retained and included in factor levels
         standard_division_names ~ .data[[temp_clean_col]],
 
         # --- Handle anything else ---
-        # By default, case_match returns NA if no condition is met.
-        # This flags unknown/unexpected values.
+        # Default returns NA, flagging unknown/unexpected values
         .default = NA_character_
       )
     )
 
-  # Check if any values became NA during standardization (optional but informative)
-  original_values <- data[[col_name]]
-  standardized_values <- data_standardized[[paste0(col_name,"_std_temp")]]
+  # Check if any values became NA during standardization
+  original_values <- data[[col_name]] # Get original for comparison
+  standardized_values <- data_standardized[[temp_std_col]]
+  # Check where original was not NA/blank but standardized is NA
   num_na_introduced <- sum(is.na(standardized_values) & !is.na(original_values) & original_values != "")
   if (num_na_introduced > 0) {
     rlang::warn(paste0(num_na_introduced, " value(s) in column ", shQuote(col_name),
                        " did not match standard divisions and became NA."))
   }
 
-
   # Overwrite original column, convert to factor w/ standard levels
-  # Use the !!sym() construct to use the string col_name on the LHS
   data_standardized <- data_standardized |>
     dplyr::mutate(
-      !!rlang::sym(col_name) := factor(.data[[paste0(col_name,"_std_temp")]],
+      !!rlang::sym(col_name) := factor(.data[[temp_std_col]],
                                        levels = standard_division_names)
     ) |>
     # Remove the temporary columns
-    dplyr::select(-dplyr::all_of(c(temp_clean_col, paste0(col_name,"_std_temp"))))
+    dplyr::select(-dplyr::all_of(c(temp_clean_col, temp_std_col)))
 
 
   return(data_standardized)
@@ -291,7 +263,7 @@ standardize_division <- function(data, division_col = division) {
 #'
 #' Attempts to map variations of Dallas City Council District names/numbers
 #' to a standard format ("1" through "14") and converts the column to a factor.
-#' Assumes input column has already had basic text cleaning (lowercase, spacing).
+#' Assumes input column has already had basic text cleaning.
 #'
 #' @param data A data frame or tibble containing a council district column,
 #'   typically named `district`.
@@ -303,8 +275,8 @@ standardize_division <- function(data, division_col = division) {
 #'   confidently mapped to 1-14 will become `NA`.
 #' @export
 #'
-#' @importFrom dplyr mutate case_match select all_of rename_with across lead lag na_if pull if_else
-#' @importFrom rlang .data enquo quo_name sym :=
+#' @importFrom dplyr mutate case_when select all_of if_else across
+#' @importFrom rlang .data enquo quo_name sym warn inform check_installed :=
 #' @importFrom stringr str_squish str_to_lower str_extract str_detect
 #'
 #' @examples
@@ -316,11 +288,6 @@ standardize_division <- function(data, division_col = division) {
 #'   # Check the levels and values
 #'   print(levels(standardized_incidents$district))
 #'   print(table(standardized_incidents$district, useNA = "ifany"))
-#'
-#'   # Example with different inputs
-#'   # df <- tibble::tibble(council_dist = c("1", "District 2", "DISTRICT_03", "UNKNOWN"))
-#'   # standardized_df <- standardize_district(df, district_col = council_dist)
-#'   # print(standardized_df) # Expect "1", "2", "3", NA
 #' }
 standardize_district <- function(data, district_col = district) {
 
@@ -344,8 +311,8 @@ standardize_district <- function(data, district_col = district) {
   rlang::inform(paste("Standardizing Council District column:", shQuote(col_name)))
 
   # Temporary column names
-  temp_clean_col <- paste0(col_name, "_clean_temp")
-  temp_std_col <- paste0(col_name, "_std_temp")
+  temp_clean_col <- paste0(".__", col_name, "_clean_temp")
+  temp_std_col <- paste0(".__", col_name, "_std_temp")
 
   data_standardized <- data |>
     # Basic cleaning within function for robustness
@@ -358,10 +325,10 @@ standardize_district <- function(data, district_col = district) {
         # Explicit matches for numbers "1" through "14"
         .data[[temp_clean_col]] %in% standard_district_levels ~ .data[[temp_clean_col]],
         # Extract number from strings like "district 1", "dist 14", "council district 5" etc.
+        # Looks for a sequence of 1 or 2 digits at the end of the string, possibly preceded by space or underscore
         stringr::str_detect(.data[[temp_clean_col]], "(^|\\s|_)(\\d{1,2})$") ~
           stringr::str_extract(.data[[temp_clean_col]], "\\d{1,2}$"),
-        # Add other specific known variations if needed
-        # .data[[temp_clean_col]] == "some other text" ~ "desired_number",
+        # Add other specific known variations if needed (e.g., full text names?)
         .default = NA_character_ # Default to NA if no pattern matches
       ),
       # Ensure extracted numbers are within the valid 1-14 range
@@ -372,7 +339,7 @@ standardize_district <- function(data, district_col = district) {
       )
     )
 
-  # Check NAs (similar logic as standardize_division)
+  # Check for introduced NAs
   original_values <- data[[col_name]]
   standardized_values <- data_standardized[[temp_std_col]]
   num_na_introduced <- sum(is.na(standardized_values) & !is.na(original_values) & original_values != "")
@@ -393,7 +360,6 @@ standardize_district <- function(data, district_col = district) {
   return(data_standardized)
 }
 
-# R/clean_data.R (Add this function)
 
 #' Clean Dallas Police Arrests Data
 #'
@@ -440,10 +406,6 @@ standardize_district <- function(data, district_col = district) {
 #'
 #'   # Check distinct premises after cleaning
 #'   print(unique(cleaned_arrests$arpremises))
-#'
-#'   # Clean only date fields
-#'   dates_only_cleaned <- clean_arrests_data(raw_arrests, text_fields = NULL)
-#'   print(head(dates_only_cleaned))
 #' }
 clean_arrests_data <- function(data,
                                text_fields = c("arlzip", "arlcity", "arstate", "arldistrict",
@@ -490,7 +452,7 @@ clean_arrests_data <- function(data,
       cleaned_data <- cleaned_data |>
         dplyr::mutate(
           dplyr::across(
-            dplyr::all_of(fields_to_clean_present) & tidyselect::where(is.character), # Apply only to character cols
+            dplyr::all_of(fields_to_clean_present) & tidyselect::where(is.character),
             ~ .x |> stringr::str_to_lower() |> stringr::str_trim() |> stringr::str_squish()
           )
         )

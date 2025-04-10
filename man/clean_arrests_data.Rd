@@ -56,9 +56,5 @@ for data retrieved using `get_arrests()`.
 
   # Check distinct premises after cleaning
   print(unique(cleaned_arrests$arpremises))
-
-  # Clean only date fields
-  dates_only_cleaned <- clean_arrests_data(raw_arrests, text_fields = NULL)
-  print(head(dates_only_cleaned))
 }
 }
