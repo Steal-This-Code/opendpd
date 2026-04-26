@@ -6,62 +6,49 @@
 \usage{
 clean_incidents_data(
   data,
-  text_fields = c("division", "district", "sector", "beat", "premise", "offincident",
-    "signal", "ucr_disp", "status", "type"),
+  text_fields = c("division", "district", "premise", "offincident", "signal", "ucr_disp",
+    "status", "type"),
   date_fields = c("date1", "date2_of_occurrence_2", "reporteddate", "edate",
     "callorgdate", "callreceived", "callcleared", "calldispatched", "upzdate"),
-  tz = "America/Chicago"
+  tz = "America/Chicago",
+  preserve_raw = TRUE,
+  add_normalized_fields = TRUE
 )
 }
 \arguments{
-\item{data}{A data frame or tibble, typically the output from `get_incidents()`.}
+\item{data}{A data frame or tibble, typically the output from
+[get_incidents()].}
 
-\item{text_fields}{A character vector specifying the names of text columns to clean.
-Defaults to cleaning common categorical fields known to have inconsistencies.
+\item{text_fields}{A character vector specifying the names of text columns to
+clean. Defaults to common categorical fields known to have inconsistencies.
 Provide `NULL` to skip text cleaning.}
 
-\item{date_fields}{A character vector specifying the names of date/time columns
-to parse into POSIXct objects. Defaults to known date/time fields in the
-Incidents dataset. Provide `NULL` to skip date parsing.}
+\item{date_fields}{A character vector specifying the names of date/time
+columns to parse. Defaults to known date/time fields in the Incidents
+dataset. Provide `NULL` to skip date parsing.}
 
 \item{tz}{The timezone to assign during date/time parsing. Defaults to
-`"America/Chicago"`. See `base::OlsonNames()` for other valid options.}
+`"America/Chicago"`.}
+
+\item{preserve_raw}{Logical. If `TRUE` (default), keep the original columns
+and add helper columns with `_clean` and `_parsed` suffixes. If `FALSE`,
+overwrite the source columns in place.}
+
+\item{add_normalized_fields}{Logical. If `TRUE` (default), add additional
+helper columns used by the package for safer filtering, such as
+`division_standardized`, `district_standardized`, `beat_clean`, and
+`nibrs_code_clean`.}
 }
 \value{
-A tibble with the specified cleaning and parsing applied.
+A tibble with the requested cleaning and parsing applied.
 }
 \description{
-This function standardizes common text columns by converting them to
-lowercase, trimming leading/trailing whitespace, and squishing internal
-whitespace. It also converts known date/time text columns to POSIXct objects
-using `lubridate`.
+By default, this function preserves the original portal fields and adds
+helper columns such as `division_clean`, `division_standardized`, and
+`date1_parsed`. This makes it easier to filter safely without losing the raw
+source values.
 }
 \details{
-Performs basic cleaning on text fields and converts date/time columns
-for data retrieved using `get_incidents()`.
-}
-\examples{
-\dontrun{
-  # Fetch some raw data
-  raw_incidents <- get_incidents(limit = 100, start_date = "2024-01-01")
-
-  # Apply default cleaning (common text fields + common date fields)
-  # Requires stringr & lubridate
-  # install.packages(c("stringr", "lubridate"))
-  cleaned_incidents <- clean_incidents_data(raw_incidents)
-
-  # Check distinct divisions after cleaning
-  print(unique(cleaned_incidents$division))
-
-  # Check classes of date columns
-  print(sapply(cleaned_incidents |> dplyr::select(dplyr::contains("date")), class))
-
-  # Clean only specific fields, skip date conversion
-  partially_cleaned <- clean_incidents_data(
-      raw_incidents,
-      text_fields = c("premise", "division"),
-      date_fields = NULL # Skip date parsing
-  )
-  print(head(partially_cleaned))
-}
+Performs basic cleaning on text fields and converts date/time columns for
+data retrieved using [get_incidents()] or [download_dpd_raw()].
 }

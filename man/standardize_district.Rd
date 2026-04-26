@@ -9,27 +9,14 @@ standardize_district(data, district_col = "district")
 \arguments{
 \item{data}{A data frame or tibble containing a council district column.}
 
-\item{district_col}{The name of the district column as a **string**.
-Defaults to `"district"`.}
+\item{district_col}{The name of the district column as a string.}
 }
 \value{
-A tibble with the specified district column standardized to character
-  values "1" through "14" and converted to a factor. Values that cannot be
-  confidently mapped to 1-14 will become `NA`.
+A tibble with the specified district column standardized to
+  character values `"1"` through `"14"` and converted to a factor.
 }
 \description{
-Attempts to map variations of Dallas City Council District names/numbers
-to a standard format ("1" through "14") and converts the column to a factor.
-Assumes input column has already had basic text cleaning.
-}
-\examples{
-\dontrun{
-  # Assume raw_incidents is output from get_incidents()
-  cleaned_incidents <- clean_incidents_data(raw_incidents) # Basic cleaning first
-  standardized_incidents <- standardize_district(cleaned_incidents, district_col = "district")
-
-  # Check the levels and values
-  print(levels(standardized_incidents$district))
-  print(table(standardized_incidents$district, useNA = "ifany"))
-}
+Attempts to map variations of Dallas City Council District names or numbers
+to a standard format (`"1"` through `"14"`) and converts the column to a
+factor.
 }

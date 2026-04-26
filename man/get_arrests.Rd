@@ -11,6 +11,8 @@ get_arrests(
   beat = NULL,
   sector = NULL,
   district = NULL,
+  clean = TRUE,
+  filter_strategy = c("cleaned", "portal"),
   limit = 1000,
   select = NULL,
   where = NULL,
@@ -18,74 +20,55 @@ get_arrests(
 )
 }
 \arguments{
-\item{start_date}{Optional. A character string in 'YYYY-MM-DD' format or a
-Date object specifying the minimum arrest date (inclusive, based on `ararrestdate` field).}
+\item{start_date}{Optional. A character string in `'YYYY-MM-DD'` format or a
+`Date` object specifying the minimum arrest date (inclusive).}
 
-\item{end_date}{Optional. A character string in 'YYYY-MM-DD' format or a
-Date object specifying the maximum arrest date (inclusive, based on `ararrestdate` field).}
+\item{end_date}{Optional. A character string in `'YYYY-MM-DD'` format or a
+`Date` object specifying the maximum arrest date (inclusive).}
 
-\item{zip_code}{Optional. A character or numeric vector of Zip Code(s) where the
-arrest occurred (`arlzip`).}
+\item{zip_code}{Optional. A character or numeric vector of ZIP codes where
+the arrest occurred.}
 
-\item{beat}{Optional. A character or numeric vector of Police Beat(s) where the
-arrest occurred (`arlbeat`).}
+\item{beat}{Optional. A character or numeric vector of police beats where the
+arrest occurred.}
 
-\item{sector}{Optional. A character or numeric vector of Police Sector(s) where the
-arrest occurred (`arlsector`).}
+\item{sector}{Optional. A character or numeric vector of police sectors where
+the arrest occurred.}
 
-\item{district}{Optional. A character vector of Police District names where the
-arrest occurred (`arldistrict`).}
+\item{district}{Optional. A character vector of police district names where
+the arrest occurred.}
 
-\item{limit}{The maximum number of records to return. Defaults to 1000.
-Use `limit = Inf` to attempt retrieving all matching records.}
+\item{clean}{Logical. If `TRUE` (default), return cleaned data with helper
+columns such as `arlzip_clean` and `ararrestdate_parsed`.}
 
-\item{select}{A character vector specifying which columns to retrieve.
-If NULL (default), all columns are retrieved.}
+\item{filter_strategy}{Either `"cleaned"` (default) to filter after
+normalization or `"portal"` to push dedicated filters into the Socrata
+query.}
 
-\item{where}{An optional character string containing a custom SoQL WHERE clause
-(e.g., `"race = 'BLACK'"`). Overrides other filter arguments if provided.}
+\item{limit}{The maximum number of records to return after filtering.
+Defaults to `1000`. Use `Inf` to return all matching records.}
+
+\item{select}{A character vector specifying which columns to retrieve.}
+
+\item{where}{An optional custom SoQL `WHERE` clause. If supplied, it
+overrides the dedicated filter arguments.}
 
 \item{...}{Additional SODA query parameters passed directly to the API URL,
-(e.g., `$order = "ararrestdate DESC"`).}
+such as `$order = "ararrestdate DESC"`.}
 }
 \value{
-A `tibble` containing the requested arrest data.
+A tibble containing the requested arrest data.
 }
 \description{
-This function queries the Socrata Open Data API (SODA) for Dallas Police
-Arrests. It allows filtering by date range, geographic areas (zip, beat,
-district, sector) and supports retrieving large datasets through automatic pagination.
-Note: Filtering by charge description/category via dedicated arguments has been
-removed due to field name inconsistencies; use the 'where' argument for this.
-Geographic conversion has also been removed due to missing coordinate fields
-in the confirmed field list.
+`get_arrests()` defaults to downloading raw records for the requested date
+range, cleaning them, and then applying dedicated filters locally to
+normalized helper fields. This is slower than portal-side filtering, but it
+is more robust when raw values are inconsistent.
 
-If the `where` argument is provided, it overrides all other filter arguments.
+Set `filter_strategy = "portal"` to use the previous portal-side filtering
+behavior.
 }
 \details{
 Retrieves arrest data from the Dallas Open Data portal API
-(SODA endpoint sdr7-6v3j).
-}
-\examples{
-\dontrun{
-# Get 10 most recent arrests
-recent_arrests <- get_arrests(limit = 10, `$order` = "ararrestdate DESC")
-print(recent_arrests)
-
-# Get arrests in specific beats during March 2024
-march_arrests_beat <- get_arrests(
-  start_date = "2024-03-01", end_date = "2024-03-31",
-  beat = c(114, 121), # arlbeat is numeric
-  limit = 100
-)
-print(march_arrests_beat)
-
-# Use 'where' to filter (e.g., by race - use with caution/awareness)
-arrests_filtered <- get_arrests(
-  where = "race = 'BLACK'",
-  limit = 50,
-  start_date = "2024-04-01", end_date = "2024-04-30"
-)
-print(arrests_filtered)
-}
+(SODA endpoint `sdr7-6v3j`).
 }

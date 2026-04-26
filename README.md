@@ -6,10 +6,9 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of opendpd is to provide an easy-to-use R interface for
-accessing various Dallas Police public safety datasets via the Socrata
-Open Data API, including functions for data retrieval and basic
-cleaning.
+The goal of opendpd is to make Dallas Police open data easier to
+download, preserve, standardize, and query safely when the source
+portal is inconsistent.
 
 ## Installation
 
@@ -31,8 +30,12 @@ remotes::install_github("Steal-This-Code/opendpd")
 ## Fetching Data
 
 The package provides functions starting with `get_` to retrieve data
-from different datasets. They handle API pagination automatically and
-allow filtering via dedicated arguments or a custom `where` clause.
+from different datasets. By default, they now download raw data for the
+requested date range, clean and normalize it, and then apply dedicated
+filters locally. This is slower than portal-side filtering, but it is
+more robust when raw values are inconsistent. Use
+`filter_strategy = "portal"` if you want the faster, older behavior,
+and use `download_dpd_raw()` when you want the untouched source data.
 
 ## Police Incidents
 
@@ -218,35 +221,29 @@ print(arrest_districts)
 
 The package includes functions to perform basic cleaning (text
 formatting, date parsing) and standardization for specific datasets.
-These are typically used after retrieving the data.
+These are typically used after retrieving raw portal data.
 
 ## Basic Cleaning (Text and Dates)
 
-Functions like `clean_incidents_data()` and `clean_arrests_data()` apply
-standard text cleaning (lowercase, trim whitespace) to common fields and
-parse date/time columns into POSIXct objects (using `lubridate`,
-requires installation).
+Functions like `clean_incidents_data()` and `clean_arrests_data()` add
+normalized helper columns and parsed dates while preserving the original
+portal fields by default.
 
 ``` r
-# Fetch raw incident data
-raw_incidents <- get_incidents(limit = 20, start_date = "2024-04-01")
-#> Starting data retrieval...
-#> Reached limit of 20
-#> Total records retrieved: 20
-#> Data retrieval complete.
+# Fetch untouched incident data from the portal
+raw_incidents <- download_dpd_raw(
+  dataset = "incidents",
+  limit = 20,
+  start_date = "2024-04-01"
+)
 
 # Apply cleaning
 # Needs stringr & lubridate: install.packages(c("stringr", "lubridate"))
 cleaned_incidents <- clean_incidents_data(raw_incidents)
-#> Warning: Specified `text_fields` not found and skipped: type
-#> Applying text cleaning (lower, trim, squish) to columns: division, district, sector, beat, premise, offincident, signal, ucr_disp, status
-#> Attempting to convert date columns to POSIXct (tz= America/Chicago ): date1, date2_of_occurrence_2, reporteddate, edate, callorgdate, callreceived, callcleared, calldispatched, upzdate
 
-# Check date class and cleaned division
-print(class(cleaned_incidents$date1))
-#> [1] "POSIXct" "POSIXt"
-print(head(cleaned_incidents$division))
-#> [1] "central"   "southeast" "central"   "central"   "southwest" "northwest"
+# Helper columns preserve the original fields and add normalized versions
+print(class(cleaned_incidents$date1_parsed))
+print(head(cleaned_incidents$division_standardized))
 
 # You can also clean arrest data
 # raw_arrests <- get_arrests(limit=20)
@@ -255,19 +252,15 @@ print(head(cleaned_incidents$division))
 
 ## Standardizing Categorical Fields
 
-Functions like `standardize_division()` and `standardize_district()` map
-variations in specific fields (like police division or council district
-in the incidents data) to a standard set of categories and convert them
-to factors. This is useful for analysis after basic cleaning.
+Functions like `standardize_division()` and `standardize_district()` are
+still available when you want to overwrite a specific column with a
+factor after inspection, but most workflows can now rely on the helper
+columns created by `clean_*()` and the default `get_*()` pipeline.
 
 ``` r
 # Assuming 'cleaned_incidents' from the previous step
 standardized_incidents <- standardize_division(cleaned_incidents)
-#> Standardizing column: 'division'
 standardized_incidents <- standardize_district(standardized_incidents) # Can chain them
-#> Standardizing Council District column: 'district'
-#> Warning: 20 value(s) in column 'district' could not be mapped to a standard
-#> district (1-14) and became NA.
 
 # See the standardized values and factor levels
 print(table(standardized_incidents$division, useNA = "ifany"))

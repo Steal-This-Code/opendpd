@@ -7,32 +7,15 @@
 standardize_division(data, division_col = "division")
 }
 \arguments{
-\item{data}{A data frame or tibble containing a column named `division`.}
+\item{data}{A data frame or tibble containing a division column.}
 
-\item{division_col}{The name of the division column as a **string**.
-Defaults to `"division"`.}
+\item{division_col}{The name of the division column as a string.}
 }
 \value{
-A tibble with the specified division column standardized and converted
-  to a factor with defined levels: "central", "northeast", "northwest",
-  "southcentral", "southeast", "southwest", "northcentral". Values not matching
-  known variations or standard names will become `NA`.
+A tibble with the specified division column standardized and
+  converted to a factor.
 }
 \description{
 Maps known variations of Dallas Police division names to a standard set and
-converts the column to a factor. Designed to be used after basic text cleaning
-(e.g., via `clean_incidents_data`).
-}
-\examples{
-\dontrun{
-  # Assume raw_incidents is output from get_incidents()
-  cleaned_incidents <- clean_incidents_data(raw_incidents)
-
-  # Standardize the 'division' column
-  standardized_incidents <- standardize_division(cleaned_incidents, division_col = "division")
-
-  # Check the levels and values
-  print(levels(standardized_incidents$division))
-  print(table(standardized_incidents$division, useNA = "ifany"))
-}
+converts the column to a factor.
 }

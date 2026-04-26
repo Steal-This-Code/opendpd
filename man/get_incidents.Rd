@@ -16,6 +16,8 @@ get_incidents(
   sector = NULL,
   district = NULL,
   convert_geo = FALSE,
+  clean = TRUE,
+  filter_strategy = c("cleaned", "portal"),
   limit = 1000,
   select = NULL,
   where = NULL,
@@ -23,100 +25,73 @@ get_incidents(
 )
 }
 \arguments{
-\item{start_date}{Optional. A character string in 'YYYY-MM-DD' format or a
-Date object specifying the minimum incident date (inclusive, based on `date1` text field).}
+\item{start_date}{Optional. A character string in `'YYYY-MM-DD'` format or a
+`Date` object specifying the minimum incident date (inclusive).}
 
-\item{end_date}{Optional. A character string in 'YYYY-MM-DD' format or a
-Date object specifying the maximum incident date (inclusive, based on `date1` text field).}
+\item{end_date}{Optional. A character string in `'YYYY-MM-DD'` format or a
+`Date` object specifying the maximum incident date (inclusive).}
 
-\item{nibrs_group}{Optional. A character vector of NIBRS Group codes (e.g., 'A', 'B')
-to filter incidents.}
+\item{nibrs_group}{Optional. A character vector of NIBRS Group codes to
+filter incidents.}
 
-\item{nibrs_code}{Optional. A character vector of specific NIBRS offense codes
-(e.g., '13A', '23F') to filter incidents.}
+\item{nibrs_code}{Optional. A character vector of specific NIBRS offense
+codes to filter incidents.}
 
 \item{nibrs_crime_against}{Optional. A character vector specifying the NIBRS
-'Crime Against' category (e.g., 'PERSON', 'PROPERTY', 'SOCIETY'). Filters
-on the API field `nibrs_crimeagainst`.}
+Crime Against category.}
 
-\item{zip_code}{Optional. A character or numeric vector of Zip Code(s) to filter incidents.}
+\item{zip_code}{Optional. A character or numeric vector of ZIP codes.}
 
-\item{beat}{Optional. A character or numeric vector of Police Beat(s) to filter incidents.}
+\item{beat}{Optional. A character or numeric vector of police beats.}
 
-\item{division}{Optional. A character vector of Police Division names (e.g., 'CENTRAL',
-'NORTHWEST') to filter incidents.}
+\item{division}{Optional. A character vector of police division names.}
 
-\item{sector}{Optional. A character or numeric vector of Police Sector(s) to filter incidents.}
+\item{sector}{Optional. A character or numeric vector of police sectors.}
 
-\item{district}{Optional. A character vector of Police District names (Council Districts)
-to filter incidents.}
+\item{district}{Optional. A character vector of council district names or
+numbers.}
 
-\item{convert_geo}{Logical. If `TRUE`, attempt to convert the data frame to an
-`sf` object using `x_coordinate` and `y_cordinate`. Requires the `sf`
-package to be installed. Defaults to `FALSE`. Assumes coordinates are in
-NAD83 Texas North Central (ftUS) (EPSG:2276).}
+\item{convert_geo}{Logical. If `TRUE`, attempt to convert the data frame to
+an `sf` object using `x_coordinate` and `y_cordinate`.}
 
-\item{limit}{The maximum number of records to return. Defaults to 1000.
-Use `limit = Inf` to attempt retrieving all matching records.}
+\item{clean}{Logical. If `TRUE` (default), return cleaned data with helper
+columns such as `division_standardized` and `date1_parsed`.}
 
-\item{select}{A character vector specifying which columns to retrieve.
-If `convert_geo = TRUE`, ensure `x_coordinate` and `y_cordinate` are included
-or conversion will fail. If NULL (default), all columns are retrieved.}
+\item{filter_strategy}{Either `"cleaned"` (default) to filter after
+normalization or `"portal"` to push dedicated filters into the Socrata
+query.}
 
-\item{where}{An optional character string containing a custom SoQL WHERE clause.
-Overrides other filter arguments if provided.}
+\item{limit}{The maximum number of records to return after filtering.
+Defaults to `1000`. Use `Inf` to return all matching records.}
+
+\item{select}{A character vector specifying which columns to retrieve.}
+
+\item{where}{An optional custom SoQL `WHERE` clause. If supplied, it
+overrides the dedicated filter arguments.}
 
 \item{...}{Additional SODA query parameters passed directly to the API URL,
-(e.g., `$order = "date1 DESC"`).}
+such as `$order = "date1 DESC"`.}
 }
 \value{
-A `tibble` by default. If `convert_geo = TRUE` and the `sf` package
-  is installed and coordinates are valid, returns an `sf` object with point geometry
-  using CRS EPSG:2276. Otherwise, returns a `tibble` with a warning if conversion failed.
+A tibble by default. If `convert_geo = TRUE` and coordinates are
+  valid, returns an `sf` object with CRS EPSG:2276.
 }
 \description{
-This function queries the Socrata Open Data API (SODA) for Dallas Police
-Incidents. It allows filtering by date range, NIBRS crime classifications,
-geographic areas (zip, beat, division, sector, district) and supports
-retrieving large datasets through automatic pagination.
+`get_incidents()` now defaults to a safer pipeline:
 
-If the `where` argument is provided, it overrides all other filter arguments.
+1. Download raw incident records for the requested date window.
+2. Clean and normalize the data.
+3. Apply dedicated filters to normalized helper fields locally.
 
-If `convert_geo = TRUE`, the function attempts to convert the resulting
-tibble into a spatial `sf` object using the `x_coordinate` and `y_cordinate`
-columns, assuming they are in the NAD83 Texas North Central (ftUS) coordinate
-system (EPSG:2276). Requires the `sf` package to be installed.
+This is slower than filtering directly at the portal, but it is much more
+resilient to inconsistent casing, category drift, and data dictionary
+mismatches in the source data.
+
+Set `filter_strategy = "portal"` to use the previous portal-side filtering
+behavior when speed matters more than normalization.
 }
 \details{
 Retrieves incident data from the Dallas Open Data portal API
-(SODA endpoint qv6i-rri7). Optionally converts coordinates to a geographic object.
-}
-\examples{
-\dontrun{
-# Get recent data as a standard tibble
-recent_tibble <- get_incidents(limit = 10, `$order` = "date1 DESC")
-print(class(recent_tibble))
-
-# Get recent data as an sf object (requires the sf package)
-# install.packages("sf")
-recent_sf <- get_incidents(limit = 10, `$order` = "date1 DESC", convert_geo = TRUE)
-print(class(recent_sf))
-if (inherits(recent_sf, "sf")) {
-  print(sf::st_crs(recent_sf)) # Check CRS - should show EPSG 2276
-  # plot(sf::st_geometry(recent_sf)) # Simple plot
-}
-
-# Filter and get as sf object
-central_burglaries_sf <- get_incidents(
-   division = "CENTRAL",
-   nibrs_code = "220", # Check code for Burglary/B&E
-   start_date = "2024-03-01",
-   end_date = "2024-03-31",
-   convert_geo = TRUE,
-   limit = 50
-)
-if (inherits(central_burglaries_sf, "sf")) {
-   print(central_burglaries_sf)
-}
-}
+(SODA endpoint `qv6i-rri7`). Optionally converts coordinates to a geographic
+object.
 }

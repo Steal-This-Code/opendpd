@@ -11,50 +11,43 @@ clean_arrests_data(
   date_fields = c("ararrestdate", "arbkdate", "warrantissueddate", "changedate",
     "ofcr_rpt_written_by_date", "ofcr_approved_by_date", "ofcr_received_by_date",
     "apprehended_date", "final_disp_date", "upzdate"),
-  tz = "America/Chicago"
+  tz = "America/Chicago",
+  preserve_raw = TRUE,
+  add_normalized_fields = TRUE
 )
 }
 \arguments{
-\item{data}{A data frame or tibble, typically the output from `get_arrests()`.}
+\item{data}{A data frame or tibble, typically the output from
+[get_arrests()].}
 
-\item{text_fields}{A character vector specifying the names of text columns to clean.
-Defaults to common categorical/text fields in the Arrests dataset.
+\item{text_fields}{A character vector specifying the names of text columns to
+clean. Defaults to common categorical fields in the Arrests dataset.
 Provide `NULL` to skip text cleaning.}
 
-\item{date_fields}{A character vector specifying the names of date/time columns
-to parse into POSIXct objects. Defaults to known date/time fields in the
-Arrests dataset. Provide `NULL` to skip date parsing.}
+\item{date_fields}{A character vector specifying the names of date/time
+columns to parse. Defaults to known date/time fields in the Arrests
+dataset. Provide `NULL` to skip date parsing.}
 
 \item{tz}{The timezone to assign during date/time parsing. Defaults to
-`"America/Chicago"`. See `base::OlsonNames()` for other valid options.}
+`"America/Chicago"`.}
+
+\item{preserve_raw}{Logical. If `TRUE` (default), keep the original columns
+and add helper columns with `_clean` and `_parsed` suffixes. If `FALSE`,
+overwrite the source columns in place.}
+
+\item{add_normalized_fields}{Logical. If `TRUE` (default), add additional
+helper columns used for safer local filtering, such as `arlbeat_clean` and
+`arlsector_clean`.}
 }
 \value{
-A tibble with the specified cleaning and parsing applied.
+A tibble with the requested cleaning and parsing applied.
 }
 \description{
-This function standardizes common text columns from the Arrests dataset by
-converting them to lowercase, trimming leading/trailing whitespace, and
-squishing internal whitespace. It also converts known date/time columns
-(both text and timestamp types from the source) to POSIXct objects using `lubridate`.
+By default, this function preserves the original portal fields and adds
+helper columns such as `arlzip_clean`, `arldistrict_clean`, and
+`ararrestdate_parsed`.
 }
 \details{
-Performs basic cleaning on text fields and converts date/time columns
-for data retrieved using `get_arrests()`.
-}
-\examples{
-\dontrun{
-  # Fetch some raw arrest data
-  raw_arrests <- get_arrests(limit = 100, start_date = "2024-03-01")
-
-  # Apply default cleaning (common text fields + date fields)
-  # Requires stringr & lubridate
-  # install.packages(c("stringr", "lubridate"))
-  cleaned_arrests <- clean_arrests_data(raw_arrests)
-
-  # Check class of arrest date
-  print(class(cleaned_arrests$ararrestdate))
-
-  # Check distinct premises after cleaning
-  print(unique(cleaned_arrests$arpremises))
-}
+Performs basic cleaning on text fields and converts date/time columns for
+data retrieved using [get_arrests()] or [download_dpd_raw()].
 }
